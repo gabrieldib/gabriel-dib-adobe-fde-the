@@ -196,7 +196,8 @@ def _process_product(
     generated_store: GeneratedImageStore,
     s3_mirror: S3Mirror | None = None,
 ) -> _ProductResult:
-    """Process a single product: generate/reuse base hero, create ratio variants, apply overlays and compliance checks."""
+    """Process a single product: generate/reuse base hero, 
+    create ratio variants, apply overlays and compliance checks."""
     prompt = build_generation_prompt(brief, resolved)
     base_image = None
     base_source = resolved.hero_source

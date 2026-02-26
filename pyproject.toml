@@ -26,6 +26,7 @@ s3 = [
 dev = [
   "pytest>=8.3.0",
   "ruff>=0.4.0",
+  "pyright>=1.1.0"
 ]
 
 [project.scripts]

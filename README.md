@@ -2,6 +2,55 @@
 
 Python CLI proof-of-concept that ingests campaign briefs, reuses/generates product hero images, creates ratio variants, overlays campaign text, applies optional logo placement, and writes manifest + metrics outputs.
 
+## Project Structure
+
+```
+├── src/
+│   └── creative_automation_cli/
+│       ├── cli.py                    # Entry point, arg parsing
+│       ├── pipeline.py               # Core orchestrator (run_pipeline)
+│       ├── brief_loader.py           # Load + validate brief YAML/JSON
+│       ├── exceptions.py             # Custom exceptions
+│       ├── localization.py           # Locale resolution + message translation
+│       ├── storage.py                # GeneratedImageStore + S3Mirror
+│       ├── assets/
+│       │   └── resolver.py           # Resolve product assets from disk
+│       ├── compliance/
+│       │   ├── brand.py              # Brand compliance evaluation
+│       │   ├── legal.py              # Legal text evaluation
+│       │   ├── legal_policy.py       # LegalPolicy model + loader
+│       │   └── policy.py             # BrandPolicy model + loader
+│       ├── imaging/
+│       │   ├── logo_overlay.py       # Logo placement on images
+│       │   ├── text_overlay.py       # Campaign message overlay
+│       │   └── variants.py           # Ratio variant generation (1x1, 9x16, 16x9)
+│       ├── models/
+│       │   ├── brief.py              # Pydantic CampaignBrief model
+│       │   └── schema_export.py      # JSON schema export utility
+│       ├── output/
+│       │   ├── manifest.py           # CampaignManifest + ProductManifestEntry
+│       │   ├── metrics.py            # RunMetrics + Timer
+│       │   └── writer.py             # save_image, write_json
+│       ├── prompts/
+│       │   └── builder.py            # build_generation_prompt
+│       └── providers/
+│           ├── base.py               # ImageProvider ABC
+│           ├── factory.py            # create_provider()
+│           ├── mock.py               # Mock provider
+│           ├── gemini_developer.py   # Gemini Developer API backend
+│           └── gemini_vertex.py      # Gemini Vertex AI backend
+├── tests/                            # pytest suite
+├── examples/                         # Sample briefs (YAML + JSON)
+├── config/                           # Default brand/legal policy YAML
+├── schemas/                          # JSON schema artifacts
+├── output/                           # Committed sample run output
+├── storage/                          # Generated image store
+├── assets/                           # Product asset files
+├── ARCHITECTURE.mmd                  # Mermaid flowchart of the pipeline
+├── pyproject.toml                    # Build config + dependencies
+└── README.md
+```
+
 ## Install
 
 ### 1) Create environment
@@ -18,16 +67,42 @@ Windows (PowerShell):
 .\.venv\Scripts\Activate.ps1
 ```
 
+macOS / Linux:
+
+```bash
+source .venv/bin/activate
+```
+
 ### 3) Install package
 
 ```bash
 pip install -e .
 ```
 
-Optional Gemini backend dependency:
+Optional dependencies — install only what you need:
+
+**Gemini** — required when using `--provider real` to call the Gemini image generation and translation APIs. Not needed for mock runs.
 
 ```bash
 pip install -e .[gemini]
+```
+
+**S3** — required when `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` are present in the environment. Enables mirroring output and generated images to S3 and falling back to S3 on local cache misses. Not needed for local-only runs.
+
+```bash
+pip install -e .[s3]
+```
+
+**Dev** — required for running tests and linting during development. Not needed to run the CLI.
+
+```bash
+pip install -e .[dev]
+```
+
+Install everything at once:
+
+```bash
+pip install -e .[gemini,s3,dev]
 ```
 
 ## CLI Usage
