@@ -1,7 +1,31 @@
 .venv/
 .env
-.pytest_cache
-.ruff_cache
-__pycache__
-*.pyc
+
+.pytest_cache/
+.coverage
+htmlcov/
+.ruff_cache/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Setuptools / pip
+*.egg-info/
+*.egg
+dist/
+build/
+wheels/
+pip-wheel-metadata/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Other
 ARCHITECTURE.mmd
+creative_automation_cli.egg-info/
