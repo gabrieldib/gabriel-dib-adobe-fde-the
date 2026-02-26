@@ -11,8 +11,6 @@ Python CLI proof-of-concept that ingests campaign briefs, reuses/generates produ
 │       ├── pipeline.py               # Core orchestrator (run_pipeline)
 │       ├── brief_loader.py           # Load + validate brief YAML/JSON
 │       ├── exceptions.py             # Custom exceptions
-│       ├── localization.py           # Locale resolution + message translation
-│       ├── storage.py                # GeneratedImageStore + S3Mirror
 │       ├── assets/
 │       │   └── resolver.py           # Resolve product assets from disk
 │       ├── compliance/
@@ -33,12 +31,17 @@ Python CLI proof-of-concept that ingests campaign briefs, reuses/generates produ
 │       │   └── writer.py             # save_image, write_json
 │       ├── prompts/
 │       │   └── builder.py            # build_generation_prompt
-│       └── providers/
-│           ├── base.py               # ImageProvider ABC
-│           ├── factory.py            # create_provider()
-│           ├── mock.py               # Mock provider
-│           ├── gemini_developer.py   # Gemini Developer API backend
-│           └── gemini_vertex.py      # Gemini Vertex AI backend
+│       ├── providers/
+│       │   ├── base.py               # ImageProvider ABC
+│       │   ├── factory.py            # create_provider()
+│       │   ├── mock.py               # Mock provider
+│       │   ├── gemini_developer.py   # Gemini Developer API backend
+│       │   └── gemini_vertex.py      # Gemini Vertex AI backend
+│       ├── localization/
+│       │   └── translator.py         # Locale resolution + message translation
+│       └── storage/
+│           ├── generated_store.py    # GeneratedImageStore
+│           └── s3_mirror.py          # S3Mirror
 ├── tests/                            # pytest suite
 ├── examples/                         # Sample briefs (YAML + JSON)
 ├── config/                           # Default brand/legal policy YAML
