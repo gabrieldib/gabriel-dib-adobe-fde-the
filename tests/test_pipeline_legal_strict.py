@@ -2,6 +2,7 @@ from pathlib import Path
 
 import pytest
 
+from creative_automation_cli.exceptions import ComplianceViolationError
 from creative_automation_cli.pipeline import RunConfig, run_pipeline
 
 
@@ -49,5 +50,5 @@ locale_overrides: {}
         strict_legal=True,
     )
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(ComplianceViolationError):
         run_pipeline(config)

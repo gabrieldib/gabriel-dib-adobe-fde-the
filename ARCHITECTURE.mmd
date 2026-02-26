@@ -1,0 +1,70 @@
+flowchart TD
+    A([generate_campaign CLI]) --> B[Load .env file]
+    B --> C[Parse CLI arguments]
+    C --> D[Build RunConfig]
+    D --> E[run_pipeline]
+
+    subgraph INIT ["Pipeline Initialisation"]
+        E --> F[load_and_validate_brief]
+        F --> G[create_provider]
+        G --> H[build_localizer]
+        H --> I[S3Mirror.from_env]
+        I --> J[GeneratedImageStore]
+        J --> K[resolve_product_assets]
+        K --> L[load_brand_policy]
+        L --> M[load_legal_policy]
+        M --> N[resolve_output_locales]
+    end
+
+    N --> O
+
+    subgraph LOOP ["For each product"]
+        O[build_generation_prompt] --> P{hero asset present?}
+
+        P -- yes --> Q[compose_reused_variant]
+        P -- no --> R{generated-image-mode}
+
+        R -- last --> S[load_last_for_product]
+        R -- id --> T[load_by_id]
+        R -- new --> U[generate_base_hero]
+        U --> V[save_new local + S3]
+
+        S --> W[base hero image]
+        T --> W
+        V --> W
+        Q --> W
+
+        W --> X{legal_policy loaded?}
+        X -- yes --> Y[evaluate_legal_text prompt]
+        Y -- blocked + strict --> FAIL1([RuntimeError])
+        Y -- ok --> Z
+        X -- no --> Z
+
+        Z[for each ratio 1x1 9x16 16x9] --> AA[create_variant center-crop]
+        AA --> BB[for each locale]
+        BB --> CC[translate message]
+        CC --> DD{legal_policy loaded?}
+        DD -- yes --> EE[evaluate_legal_text message]
+        EE -- blocked + strict --> FAIL2([RuntimeError])
+        EE -- ok --> FF
+        DD -- no --> FF
+
+        FF[overlay_campaign_message] --> GG{logo found?}
+        GG -- yes --> HH[overlay_logo]
+        GG -- no --> II
+        HH --> II
+
+        II{brand_policy loaded?} -- yes --> JJ[evaluate_brand_compliance]
+        JJ -- violation + strict --> FAIL3([RuntimeError])
+        JJ -- ok --> KK
+        II -- no --> KK
+
+        KK{dry-run?} -- no --> LL[save_image PNG]
+        LL --> MM[S3Mirror upload_output_file]
+        KK -- yes --> NN
+        MM --> NN[accumulate metrics]
+    end
+
+    NN --> OO[write manifest.json and metrics.json]
+    OO --> PP[S3Mirror upload manifest and metrics]
+    PP --> QQ([Run complete])

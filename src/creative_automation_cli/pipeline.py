@@ -12,6 +12,7 @@ from creative_automation_cli.compliance.brand import evaluate_brand_compliance
 from creative_automation_cli.compliance.legal import evaluate_legal_text
 from creative_automation_cli.compliance.legal_policy import LegalPolicy, load_legal_policy
 from creative_automation_cli.compliance.policy import BrandPolicy, load_brand_policy
+from creative_automation_cli.exceptions import ComplianceViolationError, ConfigurationError
 from creative_automation_cli.imaging.logo_overlay import overlay_logo
 from creative_automation_cli.imaging.text_overlay import overlay_campaign_message
 from creative_automation_cli.imaging.variants import TARGET_VARIANTS, create_variant
@@ -28,7 +29,7 @@ from creative_automation_cli.output.writer import save_image, write_json
 from creative_automation_cli.prompts.builder import build_generation_prompt
 from creative_automation_cli.providers.base import ImageProvider
 from creative_automation_cli.providers.factory import create_provider
-from creative_automation_cli.storage import GeneratedImageStore
+from creative_automation_cli.storage import GeneratedImageStore, S3Mirror
 
 logger = logging.getLogger(__name__)
 
@@ -193,6 +194,7 @@ def _process_product(
     locales_to_render: list[str],
     config: RunConfig,
     generated_store: GeneratedImageStore,
+    s3_mirror: S3Mirror | None = None,
 ) -> _ProductResult:
     """Process a single product: generate/reuse base hero, create ratio variants, apply overlays and compliance checks."""
     prompt = build_generation_prompt(brief, resolved)
@@ -236,9 +238,10 @@ def _process_product(
             legal_flagged += 1
         if prompt_legal.should_block:
             legal_blocked += 1
-            raise RuntimeError(
+            raise ComplianceViolationError(
                 f"Legal compliance failed for product={resolved.product.id} prompt: "
-                + "; ".join(prompt_legal.violations)
+                + "; ".join(prompt_legal.violations),
+                violations=prompt_legal.violations,
             )
 
     assets_reused = 1 if base_source in {"reused", "generated_last", "generated_id"} else 0
@@ -280,9 +283,10 @@ def _process_product(
                     legal_flagged += 1
                 if message_legal.should_block:
                     legal_blocked += 1
-                    raise RuntimeError(
+                    raise ComplianceViolationError(
                         f"Legal compliance failed for product={resolved.product.id} locale={locale_code} message: "
-                        + "; ".join(message_legal.violations)
+                        + "; ".join(message_legal.violations),
+                        violations=message_legal.violations,
                     )
 
             localized_variant = overlay_campaign_message(
@@ -317,11 +321,13 @@ def _process_product(
                         + "; ".join(compliance.violations)
                     )
                     if config.strict_brand:
-                        raise RuntimeError(violation_msg)
+                        raise ComplianceViolationError(violation_msg)
                     logger.warning(violation_msg)
 
             if not config.dry_run:
                 save_image(localized_variant, output_path)
+                if s3_mirror is not None:
+                    s3_mirror.upload_output_file(output_path, config.output_root)
 
             variants_produced += 1
             output_key = ratio_key if locale_code == "en" else f"{ratio_key}_{normalize_locale(locale_code)}"
@@ -345,7 +351,8 @@ def run_pipeline(config: RunConfig) -> tuple[dict, dict]:
     brief = load_and_validate_brief(config.brief_path)
     provider = create_provider(config.provider_mode, config.gemini_backend, config.gemini_model)
     localizer = build_localizer(config.localize, config.provider_mode, config.gemini_backend)
-    generated_store = GeneratedImageStore(config.storage_root)
+    s3_mirror = S3Mirror.from_env()
+    generated_store = GeneratedImageStore(config.storage_root, s3_mirror=s3_mirror)
     resolved_assets = resolve_product_assets(config.assets_root, brief)
     brand_policy, policy_path = _resolve_brand_policy(config.brand_policy_path)
     legal_policy, legal_policy_path = _resolve_legal_policy(config.legal_policy_path)
@@ -387,6 +394,7 @@ def run_pipeline(config: RunConfig) -> tuple[dict, dict]:
             locales_to_render=locales_to_render,
             config=config,
             generated_store=generated_store,
+            s3_mirror=s3_mirror,
         )
         manifest.products.append(result.entry)
         metrics.total_products_processed += 1
@@ -418,6 +426,9 @@ def run_pipeline(config: RunConfig) -> tuple[dict, dict]:
     metrics_path = config.output_root / brief.campaign_id / "metrics.json"
     write_json(manifest.to_dict(), manifest_path)
     write_json(metrics.to_dict(), metrics_path)
+    if s3_mirror is not None:
+        s3_mirror.upload_output_file(manifest_path, config.output_root)
+        s3_mirror.upload_output_file(metrics_path, config.output_root)
 
     logger.info("Campaign %s completed", brief.campaign_id)
     return manifest.to_dict(), metrics.to_dict()
@@ -427,7 +438,7 @@ def run_legal_validation_only(config: RunConfig) -> dict:
     brief = load_and_validate_brief(config.brief_path)
     legal_policy, legal_policy_path = _resolve_legal_policy(config.legal_policy_path)
     if legal_policy is None:
-        raise RuntimeError(
+        raise ConfigurationError(
             "No legal policy found. Provide --legal-policy or add config/legal_policy.yaml before using --validate-legal-only."
         )
 
@@ -497,7 +508,7 @@ def run_legal_validation_only(config: RunConfig) -> dict:
     }
 
     if config.strict_legal and checks_blocked > 0:
-        raise RuntimeError(
+        raise ComplianceViolationError(
             "Legal validation-only check failed in strict mode: "
             f"{checks_blocked} checks blocked out of {checks_executed}."
         )

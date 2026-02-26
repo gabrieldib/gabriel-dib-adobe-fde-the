@@ -267,13 +267,78 @@ A full sample run output is committed at `output/adobe-client-campaign/`. It inc
 - `product_1/{1x1,9x16,16x9}/final.png` — generated hero variants with text overlay
 - `product_2/{1x1,9x16,16x9}/final.png` — reused hero variants with text overlay
 
-## Cloud Storage Adaptation
+## AWS S3 Mirror (optional)
 
-`GeneratedImageStore` in `src/creative_automation_cli/storage/generated_store.py` provides three methods (`save_new`, `load_last_for_product`, `load_by_id`) against a local filesystem. Swapping to cloud storage (AWS S3, Azure Blob, Dropbox) requires only replacing those three method bodies with the relevant SDK calls — the rest of the pipeline is unaffected.
+When `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` are present in the
+environment (or in a `.env` file in the project root), the pipeline
+automatically mirrors **all** local writes to the S3 bucket
+`gabriel-adobe-fde-tha` and falls back to S3 on local cache misses.
+
+If no credentials are found the tool runs in **local-only mode** with no
+change in behavior.
+
+### Install the optional S3 dependency
+
+```bash
+pip install -e .[s3]
+```
+
+### Required environment variables
+
+| Variable | Required | Description |
+|---|---|---|
+| `AWS_ACCESS_KEY_ID` | Yes | IAM access key |
+| `AWS_SECRET_ACCESS_KEY` | Yes | IAM secret key |
+| `AWS_DEFAULT_REGION` | No (default `us-east-1`) | Bucket region |
+
+Add them to your `.env` file in the project root (the CLI loads it automatically):
+
+```dotenv
+AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+AWS_DEFAULT_REGION=us-east-1
+```
+
+### What is mirrored
+
+| Local path | S3 key |
+|---|---|
+| `storage/generated/{product_id}/{image_id}.png` | `generated/{product_id}/{image_id}.png` |
+| `output/{campaign_id}/{product_id}/{ratio}/final*.png` | `output/{campaign_id}/{product_id}/{ratio}/final*.png` |
+| `output/{campaign_id}/manifest.json` | `output/{campaign_id}/manifest.json` |
+| `output/{campaign_id}/metrics.json` | `output/{campaign_id}/metrics.json` |
+
+### Read fallback
+
+For `--generated-image-mode last` and `--generated-image-mode id`, if the
+requested image is not present locally the pipeline downloads it from S3 and
+caches it under the local `storage/` root for subsequent runs.
+
+### Extension path
+
+`S3Mirror` in `src/creative_automation_cli/storage/s3_mirror.py` exposes
+only four methods (`upload_file`, `download_file`, `list_keys`, domain
+helpers). Adapting to Azure Blob or Dropbox requires replacing those method
+bodies with the corresponding SDK calls — the rest of the pipeline is
+unaffected.
+
+## Path to Production
+
+This POC demonstrates the complete creative automation loop end-to-end. Taking it to an enterprise production environment would require the following architectural evolutions:
+
+1. **Concurrency & Async I/O** — The current pipeline processes products, ratios, and locales sequentially. In production, GenAI API calls (image generation, translation) should be parallelised using `asyncio` or `concurrent.futures.ThreadPoolExecutor` to reduce total campaign generation time proportionally to the number of products.
+
+2. **Step-based Pipeline Architecture** — The main orchestration loop should be refactored into a Chain of Responsibility (Step) pattern. Each discrete concern (`LegalCheckStep`, `LocalizationStep`, `TextOverlayStep`, `BrandComplianceStep`, `StorageStep`) becomes an independent, testable class that receives a `PipelineContext` object. This allows Adobe to inject additional steps (e.g. `WatermarkStep`, `AutoTaggingStep`) without touching the core loop, adhering to the Open/Closed Principle.
+
+3. **Structured Logging** — Standard Python logging should be swapped for structured JSON logging (e.g. [`structlog`](https://www.structlog.org/)) so that compliance warnings, generation metrics, and S3 upload events can be ingested and queried directly in Datadog or AWS CloudWatch without parsing free-form strings.
+
+4. **Event-Driven Trigger** — Rather than a synchronous CLI, a production system would expose the pipeline as a Lambda or Fargate task triggered by an SQS message or EventBridge rule, with the campaign brief delivered as a JSON payload from an upstream orchestration system (e.g. Adobe Workfront).
+
+5. **Signed URL Asset Delivery** — The current `S3Mirror` uploads finished PNG files. In production, output assets should be surfaced as pre-signed S3 URLs with a short TTL and registered in a DAM (Digital Asset Management) system (e.g. Adobe Experience Manager Assets) rather than consumed directly from the bucket.
 
 ## Assumptions and Limitations
 
-- Local execution only (no cloud storage integration). See **Cloud Storage Adaptation** above for the extension path.
+- S3 mirroring is optional and activated only when AWS credentials are present. See **AWS S3 Mirror** above.
 - No authentication/security/compliance features beyond API key env vars for provider access.
 - Translation is implemented: `--localize --provider mock` uses a `[locale] message` prefix; `--localize --provider real` calls the Gemini Developer API to translate the campaign message into each locale.
 - Real provider support depends on model/account access and optional `google-genai` dependency (`pip install -e .[gemini]`).

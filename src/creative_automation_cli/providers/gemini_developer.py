@@ -5,6 +5,8 @@ import os
 
 from PIL import Image
 
+from creative_automation_cli.exceptions import ProviderGenerationError
+
 from .base import ImageProvider
 
 
@@ -34,7 +36,7 @@ class GeminiDeveloperProvider(ImageProvider):
                 contents=[merged_prompt],
             )
         except Exception as exc:
-            raise RuntimeError(
+            raise ProviderGenerationError(
                 f"Gemini Developer API call failed for model '{self.model}': {exc}. "
                 "Check your GEMINI_API_KEY, network connectivity, and that the model name is correct."
             ) from exc
@@ -54,7 +56,7 @@ class GeminiDeveloperProvider(ImageProvider):
                     if hasattr(sdk_image, "_pil_image") and hasattr(sdk_image._pil_image, "convert"):
                         return sdk_image._pil_image.convert("RGB")
 
-        raise RuntimeError(
+        raise ProviderGenerationError(
             f"Gemini response from model '{self.model}' did not contain image data. "
             "Use an image-capable model such as gemini-2.5-flash-image."
         )

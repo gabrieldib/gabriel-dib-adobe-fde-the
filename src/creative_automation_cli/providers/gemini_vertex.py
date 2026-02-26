@@ -5,6 +5,8 @@ import os
 
 from PIL import Image
 
+from creative_automation_cli.exceptions import ProviderGenerationError
+
 from .base import ImageProvider
 
 
@@ -39,7 +41,7 @@ class GeminiVertexProvider(ImageProvider):
                 config=self._types.GenerateContentConfig(response_modalities=["IMAGE", "TEXT"]),
             )
         except Exception as exc:
-            raise RuntimeError(
+            raise ProviderGenerationError(
                 f"Gemini Vertex API call failed for model '{self.model}' "
                 f"(project={self.project}, location={self.location}): {exc}. "
                 "Check your GOOGLE_CLOUD_PROJECT / GOOGLE_CLOUD_LOCATION env vars, ADC credentials, and model name."
@@ -53,4 +55,4 @@ class GeminiVertexProvider(ImageProvider):
                     inline_data = getattr(part, "inline_data", None)
                     if inline_data and getattr(inline_data, "data", None):
                         return Image.open(io.BytesIO(inline_data.data)).convert("RGB")
-        raise RuntimeError("Vertex Gemini response did not contain image data.")
+        raise ProviderGenerationError("Vertex Gemini response did not contain image data.")
