@@ -174,6 +174,8 @@ def _process_product(
     config: RunConfig,
     generated_store: GeneratedImageStore,
     s3_mirror: S3Mirror | None = None,
+    assets_reused: int = 0,
+    assets_generated: int = 0,
 ) -> _ProductResult:
     """Process a single product: generate/reuse base hero, 
     create ratio variants, apply overlays and compliance checks."""
@@ -222,7 +224,6 @@ def _process_product(
                 violations=prompt_legal.violations,
             )
 
-    assets_reused = 1 if base_source in {"reused", "generated_last", "generated_id"} else 0
     variants_produced = 0
 
     for ratio_key in TARGET_VARIANTS:
@@ -314,7 +315,7 @@ def _process_product(
     return _ProductResult(
         entry=entry,
         assets_reused=assets_reused,
-        assets_generated=1 - assets_reused,
+        assets_generated=assets_generated,
         variants_produced=variants_produced,
         legal_checked=legal_checked,
         legal_flagged=legal_flagged,
@@ -332,11 +333,14 @@ def run_pipeline(config: RunConfig) -> tuple[dict, dict]:
     s3_mirror = S3Mirror.from_env()
     generated_store = GeneratedImageStore(config.storage_root, s3_mirror=s3_mirror)
     resolved_assets = resolve_product_assets(config.assets_root, brief)
+    asset_counts: dict[str, tuple[int, int]] = {}
     if not config.dry_run:
-        resolved_assets = [
-            ensure_product_assets(r, brief, provider, generated_store, brief.negative_prompt)
-            for r in resolved_assets
-        ]
+        updated_assets: list = []
+        for r in resolved_assets:
+            r, n_existing, n_generated = ensure_product_assets(r, brief, provider, generated_store, brief.negative_prompt)
+            asset_counts[r.product.id] = (n_existing, n_generated)
+            updated_assets.append(r)
+        resolved_assets = updated_assets
     brand_policy, policy_path = _resolve_brand_policy(config.brand_policy_path)
     legal_policy, legal_policy_path = _resolve_legal_policy(config.legal_policy_path)
     locales_to_render = resolve_output_locales(config.localize, brief.locals, config.locale)
@@ -368,6 +372,7 @@ def run_pipeline(config: RunConfig) -> tuple[dict, dict]:
 
     for resolved in resolved_assets:
         try:
+            n_reused, n_generated = asset_counts.get(resolved.product.id, (0, 0))
             result = _process_product(
                 resolved=resolved,
                 brief=brief,
@@ -379,6 +384,8 @@ def run_pipeline(config: RunConfig) -> tuple[dict, dict]:
                 config=config,
                 generated_store=generated_store,
                 s3_mirror=s3_mirror,
+                assets_reused=n_reused,
+                assets_generated=n_generated,
             )
         except ComplianceViolationError as exc:
             if config.strict_legal or config.strict_brand:

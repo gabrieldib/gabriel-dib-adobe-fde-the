@@ -171,7 +171,7 @@ def main() -> None:
 
     print("Run metrics")
     print(f"- Total products processed: {metrics['total_products_processed']}")
-    print(f"- Assets reused: {metrics['assets_reused']}")
+    print(f"- Existing assets used: {metrics['assets_reused']}")
     print(f"- Assets generated: {metrics['assets_generated']}")
     print(f"- Total variants produced: {metrics['total_variants_produced']}")
     print(f"- Execution time (s): {metrics['execution_time_seconds']}")

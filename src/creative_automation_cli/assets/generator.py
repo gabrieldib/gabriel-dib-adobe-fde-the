@@ -73,7 +73,7 @@ def ensure_product_assets(
     provider: ImageProvider,
     store: GeneratedImageStore,
     negative_prompt: str | None = None,
-) -> ResolvedProductAssets:
+) -> tuple[ResolvedProductAssets, int, int]:
     """Generate and save any missing assets (product, logo, background).
 
     Each missing asset is generated via *provider*, saved flat into
@@ -81,8 +81,14 @@ def ensure_product_assets(
     when a mirror is configured.  The returned :class:`ResolvedProductAssets`
     has its path fields updated to the newly created files so the rest of the
     pipeline picks them up without further changes.
+
+    Returns:
+        Tuple of (resolved, n_existing, n_generated) where each count tracks
+        individual asset files (hero, logo, background).
     """
     product_id = resolved.product.id
+    n_existing = 0
+    n_generated = 0
 
     if resolved.hero_path is None:
         filename = f"product_{product_id}.png"
@@ -94,8 +100,10 @@ def ensure_product_assets(
         )
         dest = store.save_asset(filename, image)
         resolved.hero_path = dest
-        resolved.hero_source = "reused"
+        n_generated += 1
         logger.info("Saved generated product asset: %s", dest)
+    else:
+        n_existing += 1
 
     if resolved.logo_path is None:
         filename = f"logo_{product_id}.png"
@@ -107,7 +115,10 @@ def ensure_product_assets(
         )
         dest = store.save_asset(filename, image)
         resolved.logo_path = dest
+        n_generated += 1
         logger.info("Saved generated logo asset: %s", dest)
+    else:
+        n_existing += 1
 
     if resolved.background_path is None:
         filename = f"background_{product_id}.png"
@@ -119,6 +130,9 @@ def ensure_product_assets(
         )
         dest = store.save_asset(filename, image)
         resolved.background_path = dest
+        n_generated += 1
         logger.info("Saved generated background asset: %s", dest)
+    else:
+        n_existing += 1
 
-    return resolved
+    return resolved, n_existing, n_generated

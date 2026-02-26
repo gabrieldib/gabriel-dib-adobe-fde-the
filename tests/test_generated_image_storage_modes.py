@@ -62,7 +62,7 @@ def test_ensure_product_assets_saves_flat_files(tmp_path: Path) -> None:
         assert resolved.logo_path is None
         assert resolved.background_path is None
 
-        updated = ensure_product_assets(resolved, brief, provider, store)
+        updated, n_existing, n_generated = ensure_product_assets(resolved, brief, provider, store)
 
         pid = resolved.product.id
         gen_dir = storage_root / "generated"
@@ -106,7 +106,7 @@ def test_ensure_product_assets_skips_existing_assets(tmp_path: Path) -> None:
     Image.new("RGB", (32, 32), (123, 45, 67)).save(existing_hero)
     resolved.hero_path = existing_hero
 
-    updated = ensure_product_assets(resolved, brief, provider, store)
+    updated, n_existing, n_generated = ensure_product_assets(resolved, brief, provider, store)
 
     # hero_path should still point to the original file (not regenerated)
     assert updated.hero_path == existing_hero
