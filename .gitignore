@@ -26,6 +26,10 @@ pip-wheel-metadata/
 Thumbs.db
 desktop.ini
 
+#output
+output/
+storage/
+
 # Other
 ARCHITECTURE.mmd
 creative_automation_cli.egg-info/
