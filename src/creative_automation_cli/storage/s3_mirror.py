@@ -124,6 +124,14 @@ class S3Mirror:
         """Upload a generated hero image to ``generated/{product_id}/{image_id}.png``."""
         self.upload_file(local_path, self._generated_key(product_id, image_id))
 
+    def upload_asset(self, local_path: Path, asset_filename: str) -> None:
+        """Upload a flat named asset to ``generated/{asset_filename}``.
+
+        Used for deterministic assets whose filenames follow the
+        ``{type}_{product_id}.png`` pattern.
+        """
+        self.upload_file(local_path, f"generated/{asset_filename}")
+
     def download_generated_image(self, product_id: str, image_id: str, dest_path: Path) -> bool:
         """Download ``generated/{product_id}/{image_id}.png`` to *dest_path*."""
         return self.download_file(self._generated_key(product_id, image_id), dest_path)

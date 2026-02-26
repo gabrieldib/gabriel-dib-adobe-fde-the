@@ -2,9 +2,6 @@ policy_version: "1.0"
 brand_name: "Client Brand"
 
 logo:
-  required: true
-  expected_filenames:
-    - logo.png
   safe_corner: top-right
   max_relative_width: 0.22
 

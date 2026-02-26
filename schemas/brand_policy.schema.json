@@ -8,7 +8,7 @@
     "brand_name": { "type": "string", "minLength": 1 },
     "logo": {
       "type": "object",
-      "required": ["required", "expected_filenames", "safe_corner", "max_relative_width"],
+      "required": ["safe_corner", "max_relative_width"],
       "properties": {
         "required": { "type": "boolean" },
         "expected_filenames": {

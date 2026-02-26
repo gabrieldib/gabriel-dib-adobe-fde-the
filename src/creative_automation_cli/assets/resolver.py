@@ -20,16 +20,36 @@ def _resolve_file(path: Path) -> Path | None:
     return path if path.exists() else None
 
 
+def _resolve_hero(product_dir: Path, product: "ProductBrief") -> Path | None:
+    if product.image:
+        return _resolve_file(product_dir / product.image)
+    return _resolve_file(product_dir / "product.png") or _resolve_file(
+        product_dir / f"product_{product.id}.png"
+    )
+
+
+def _resolve_logo(product_dir: Path, product: "ProductBrief") -> Path | None:
+    if product.logo:
+        return _resolve_file(product_dir / product.logo)
+    return _resolve_file(product_dir / "logo.png") or _resolve_file(
+        product_dir / f"logo_{product.id}.png"
+    )
+
+
+def _resolve_background(product_dir: Path, product: "ProductBrief") -> Path | None:
+    return _resolve_file(product_dir / "background.png") or _resolve_file(
+        product_dir / f"background_{product.id}.png"
+    )
+
+
 def resolve_product_assets(assets_root: Path, brief: CampaignBrief) -> list[ResolvedProductAssets]:
     resolved: list[ResolvedProductAssets] = []
     for product in brief.products:
         product_dir = assets_root / product.id
-        image_name = product.image or "product.png"
-        logo_name = product.logo or "logo.png"
 
-        hero_path = _resolve_file(product_dir / image_name)
-        logo_path = _resolve_file(product_dir / logo_name)
-        background_path = _resolve_file(product_dir / "background.png")
+        hero_path = _resolve_hero(product_dir, product)
+        logo_path = _resolve_logo(product_dir, product)
+        background_path = _resolve_background(product_dir, product)
 
         resolved.append(
             ResolvedProductAssets(

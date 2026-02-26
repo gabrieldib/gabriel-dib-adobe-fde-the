@@ -7,6 +7,7 @@ from time import perf_counter
 @dataclass(slots=True)
 class RunMetrics:
     total_products_processed: int = 0
+    products_skipped: int = 0
     assets_reused: int = 0
     assets_generated: int = 0
     total_variants_produced: int = 0

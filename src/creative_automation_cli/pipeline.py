@@ -6,6 +6,7 @@ from pathlib import Path
 
 from PIL import Image
 
+from creative_automation_cli.assets.generator import ensure_product_assets
 from creative_automation_cli.assets.resolver import ResolvedProductAssets, resolve_product_assets
 from creative_automation_cli.brief_loader import load_and_validate_brief
 from creative_automation_cli.compliance.brand import evaluate_brand_compliance
@@ -64,8 +65,6 @@ class RunConfig:
     strict_brand: bool = False
     legal_policy_path: Path | None = None
     strict_legal: bool = False
-    generated_image_mode: str = "new"
-    generated_image_id: str | None = None
     storage_root: Path = Path("./storage")
 
 
@@ -150,31 +149,11 @@ def _load_reused_or_generate_base(
     prompt: str,
     negative_prompt: str | None,
     store: GeneratedImageStore,
-    generated_image_mode: str,
-    generated_image_id: str | None,
     dry_run: bool,
 ) -> tuple[Image.Image, str]:
     if resolved.hero_path and resolved.hero_path.exists():
         logger.info("Reusing hero image for product %s", resolved.product.id)
         return _compose_reused_variant(resolved, "1x1"), "reused"
-
-    if generated_image_mode == "last":
-        last_result = store.load_last_for_product(resolved.product.id)
-        if last_result is not None:
-            image_id, image = last_result
-            logger.info("Using last generated image %s for product %s", image_id, resolved.product.id)
-            return image, "generated_last"
-        logger.info("No previous generated image found for product %s. Generating new one.", resolved.product.id)
-
-    if generated_image_mode == "id":
-        if not generated_image_id:
-            raise ValueError("--generated-image-id is required when --generated-image-mode id")
-        by_id = store.load_by_id(generated_image_id)
-        if by_id is None:
-            raise ValueError(f"Generated image id not found in storage: {generated_image_id}")
-        image_id, image = by_id
-        logger.info("Using generated image id %s for product %s", image_id, resolved.product.id)
-        return image, "generated_id"
 
     logger.info("Generating hero image for product %s", resolved.product.id)
     generated = provider.generate_base_hero(prompt=prompt, size=(1536, 1536), negative_prompt=negative_prompt)
@@ -209,8 +188,6 @@ def _process_product(
             prompt,
             brief.negative_prompt,
             generated_store,
-            config.generated_image_mode,
-            config.generated_image_id,
             config.dry_run,
         )
 
@@ -355,6 +332,11 @@ def run_pipeline(config: RunConfig) -> tuple[dict, dict]:
     s3_mirror = S3Mirror.from_env()
     generated_store = GeneratedImageStore(config.storage_root, s3_mirror=s3_mirror)
     resolved_assets = resolve_product_assets(config.assets_root, brief)
+    if not config.dry_run:
+        resolved_assets = [
+            ensure_product_assets(r, brief, provider, generated_store, brief.negative_prompt)
+            for r in resolved_assets
+        ]
     brand_policy, policy_path = _resolve_brand_policy(config.brand_policy_path)
     legal_policy, legal_policy_path = _resolve_legal_policy(config.legal_policy_path)
     locales_to_render = resolve_output_locales(config.localize, brief.locals, config.locale)
@@ -385,18 +367,40 @@ def run_pipeline(config: RunConfig) -> tuple[dict, dict]:
         logger.info("Additional locale requested via --locale: %s", config.locale)
 
     for resolved in resolved_assets:
-        result = _process_product(
-            resolved=resolved,
-            brief=brief,
-            provider=provider,
-            localizer=localizer,
-            brand_policy=brand_policy,
-            legal_policy=legal_policy,
-            locales_to_render=locales_to_render,
-            config=config,
-            generated_store=generated_store,
-            s3_mirror=s3_mirror,
-        )
+        try:
+            result = _process_product(
+                resolved=resolved,
+                brief=brief,
+                provider=provider,
+                localizer=localizer,
+                brand_policy=brand_policy,
+                legal_policy=legal_policy,
+                locales_to_render=locales_to_render,
+                config=config,
+                generated_store=generated_store,
+                s3_mirror=s3_mirror,
+            )
+        except ComplianceViolationError as exc:
+            if config.strict_legal or config.strict_brand:
+                raise
+            logger.error(
+                "Product %s skipped due to compliance violation: %s",
+                resolved.product.id,
+                exc,
+            )
+            skipped_entry = ProductManifestEntry(
+                product_id=resolved.product.id,
+                product_name=resolved.product.name,
+                hero_source=resolved.hero_source,
+                skipped=True,
+                skip_reason=str(exc),
+            )
+            manifest.products.append(skipped_entry)
+            metrics.total_products_processed += 1
+            metrics.products_skipped += 1
+            legal_blocked += len(exc.violations) if exc.violations else 1
+            continue
+
         manifest.products.append(result.entry)
         metrics.total_products_processed += 1
         metrics.assets_reused += result.assets_reused

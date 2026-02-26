@@ -33,6 +33,19 @@ class GeneratedImageStore:
             self._s3.upload_generated_image(image_path, product_id, image_id)
         return image_id, image_path
 
+    def save_asset(self, asset_filename: str, image: Image.Image) -> Path:
+        """Save a named asset (``type_id.png``) flat into *generated_root*.
+
+        Unlike :meth:`save_new`, the filename is deterministic so subsequent
+        runs that supply the same asset will overwrite the previous version.
+        S3 is updated whenever a mirror is configured.
+        """
+        dest = self.generated_root / asset_filename
+        image.save(dest, format="PNG")
+        if self._s3 is not None:
+            self._s3.upload_asset(dest, asset_filename)
+        return dest
+
     def load_last_for_product(self, product_id: str) -> tuple[str, Image.Image] | None:
         product_dir = self.generated_root / product_id
         candidates: list[Path] = []

@@ -90,19 +90,6 @@ def parse_args() -> argparse.Namespace:
         help="Run legal policy checks only (no image generation or file output).",
     )
     parser.add_argument(
-        "--generated-image-mode",
-        default="new",
-        help=(
-            "For missing product images: use 'new', 'last', 'id', or pass an image ID directly "
-            "(e.g., 20260225T232014_cce7e37d or 20260225T232014_cce7e37d.png)."
-        ),
-    )
-    parser.add_argument(
-        "--generated-image-id",
-        default=None,
-        help="Image ID to use when --generated-image-mode id",
-    )
-    parser.add_argument(
         "--storage-root",
         default="./storage",
         help="Local storage root for generated images.",
@@ -110,49 +97,10 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def _normalize_generated_image_id(value: str | None) -> str | None:
-    if value is None:
-        return None
-    normalized = value.strip()
-    if normalized.lower().endswith(".png"):
-        normalized = normalized[:-4]
-    return normalized or None
-
-
-def _resolve_generated_image_selection(mode_value: str, explicit_id: str | None) -> tuple[str, str | None]:
-    normalized_mode = mode_value.strip()
-    explicit_id = _normalize_generated_image_id(explicit_id)
-
-    if normalized_mode in {"new", "last"}:
-        return normalized_mode, explicit_id
-
-    if normalized_mode == "id":
-        if not explicit_id:
-            raise ValueError("--generated-image-id is required when --generated-image-mode id")
-        return "id", explicit_id
-
-    inferred_id = _normalize_generated_image_id(normalized_mode)
-    if inferred_id:
-        return "id", inferred_id
-
-    raise ValueError(
-        "Invalid --generated-image-mode value. Use 'new', 'last', 'id', "
-        "or pass a generated image id directly."
-    )
-
-
 def main() -> None:
     _load_default_env_files()
     args = parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(message)s")
-
-    try:
-        generated_mode, generated_id = _resolve_generated_image_selection(
-            args.generated_image_mode,
-            args.generated_image_id,
-        )
-    except ValueError as exc:
-        raise SystemExit(str(exc)) from exc
 
     if not args.validate_legal_only and (not args.assets or not args.output):
         raise SystemExit("--assets and --output are required unless --validate-legal-only is used")
@@ -174,8 +122,6 @@ def main() -> None:
         strict_brand=args.strict_brand,
         legal_policy_path=Path(args.legal_policy) if args.legal_policy else None,
         strict_legal=args.strict_legal,
-        generated_image_mode=generated_mode,
-        generated_image_id=generated_id,
         storage_root=Path(args.storage_root),
     )
 

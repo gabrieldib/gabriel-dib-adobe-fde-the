@@ -66,7 +66,6 @@ RunConfig
   locale, localize, dry_run
   brand_policy_path, strict_brand
   legal_policy_path, strict_legal
-  generated_image_mode, generated_image_id
   storage_root
 ```
 

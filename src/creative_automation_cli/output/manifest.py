@@ -16,6 +16,8 @@ class ProductManifestEntry:
     output_files: dict[str, str] = field(default_factory=dict)
     compliance: dict[str, dict] = field(default_factory=dict)
     legal: dict[str, dict] = field(default_factory=dict)
+    skipped: bool = False
+    skip_reason: str | None = None
 
 
 @dataclass(slots=True)

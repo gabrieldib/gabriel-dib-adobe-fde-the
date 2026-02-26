@@ -42,3 +42,10 @@ products:
         make the computer monitor on the center of the image\
         make some od the designs flying out of the screen using Adobe style artwork\ 
         Free money guaranteed"
+
+  - id: product_3
+    name: "Fire Designer"
+    prompt: "A generative AI image designer that allows the user to\ 
+        create images from prompts and edit elements inside the images\ 
+        like layers in photoshop. Show a computer screen with Fire Designer\ 
+        open and beautiful images being edited while some abstract art fly off from the screen."

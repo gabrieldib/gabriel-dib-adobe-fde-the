@@ -140,8 +140,6 @@ usage: generate_campaign [-h] --brief BRIEF [--assets ASSETS]
                          [--brand-policy BRAND_POLICY] [--strict-brand]
                          [--legal-policy LEGAL_POLICY] [--strict-legal]
                          [--validate-legal-only]
-                         [--generated-image-mode GENERATED_IMAGE_MODE]
-                         [--generated-image-id GENERATED_IMAGE_ID]
                          [--storage-root STORAGE_ROOT]
 
 Creative Automation CLI POC
@@ -170,11 +168,6 @@ options:
   --strict-legal        Fail run when blocked legal terms/expressions are detected.
   --validate-legal-only
                         Run legal policy checks only (no image generation or file output).
-  --generated-image-mode GENERATED_IMAGE_MODE
-                        For missing product images: use 'new', 'last', 'id', or
-                        pass an image ID directly.
-  --generated-image-id GENERATED_IMAGE_ID
-                        Image ID to use when --generated-image-mode id
   --storage-root STORAGE_ROOT
                         Local storage root for generated images.
 ```
@@ -378,16 +371,24 @@ AWS_DEFAULT_REGION=us-east-1
 
 | Local path | S3 key |
 |---|---|
+| `storage/generated/{type}_{product_id}.png` | `generated/{type}_{product_id}.png` |
 | `storage/generated/{product_id}/{image_id}.png` | `generated/{product_id}/{image_id}.png` |
 | `output/{campaign_id}/{product_id}/{ratio}/final*.png` | `output/{campaign_id}/{product_id}/{ratio}/final*.png` |
 | `output/{campaign_id}/manifest.json` | `output/{campaign_id}/manifest.json` |
 | `output/{campaign_id}/metrics.json` | `output/{campaign_id}/metrics.json` |
 
-### Read fallback
+### Generated asset reuse (roadmap)
 
-For `--generated-image-mode last` and `--generated-image-mode id`, if the
-requested image is not present locally the pipeline downloads it from S3 and
-caches it under the local `storage/` root for subsequent runs.
+Currently the pipeline always generates fresh product, logo, and background
+assets when they are absent from the `assets/` folder, saving them as
+`{type}_{product_id}.png` directly under `storage/generated/` (and mirroring
+to S3 when configured).
+
+A future iteration will add a `--reuse-assets` flag and a lookup step that
+checks `storage/generated/` (and, on a cache miss, attempts an S3 download)
+before kicking off a new generation request.  The flat-file naming scheme —
+one file per `(type, product_id)` tuple — is intentionally designed to make
+that lookup trivial: no subfolder traversal or timestamp comparison required.
 
 ### Extension path
 
