@@ -1,0 +1,44 @@
+campaign_id: adobe-client-campaign
+message: "Boost your creativity with Adobe Firefly"
+target_region: "US"
+target_audience: "Graphic Designers, Artists, Illustrators, Web Designers"
+locals:
+  - "es"
+  - "pt-BR"
+
+visual_style:
+  keywords:
+    - "minimal"
+    - "premium"
+    - "studio lighting"
+    - "Artistic"
+    - "Abstract"
+    - "Colorful"
+  mood: "modern, confident"
+  palette:
+    - "#111111"
+    - "#FFFFFF"
+    - "#00A3FF"
+
+negative_prompt: "blurry, distorted text, watermark"
+
+products:
+  - id: product_1
+    name: "Campaign Assistant Free"
+    prompt: "A sleek CLI app to generate campaign assets automatically,\
+        use a designer computer with a terminal on the screen and show\
+        multiple similar images on a design app, with different aspect ratios,\
+        make the computer monitor on the center of the image\
+        make some od the designs flying out of the screen using Adobe style artwork"
+
+  - id: product_2
+    name: "Campaign Assistant Pro"
+    # NOTE: "Free money guaranteed" at the end of this prompt is intentional.
+    # It triggers the legal policy blocked-regex \bfree\s+money\b so you can
+    # demo --strict-legal / --validate-legal-only without needing a real campaign.
+    prompt: "A sleek electron app with modern UI to automate and streamline\
+        campaign assets generation, use a designer computer with a terminal\
+        on the screen and show multiple similar images on a design app, with different aspect ratios\
+        make the computer monitor on the center of the image\
+        make some od the designs flying out of the screen using Adobe style artwork\ 
+        Free money guaranteed"

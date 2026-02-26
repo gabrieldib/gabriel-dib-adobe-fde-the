@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "BrandPolicy",
+  "type": "object",
+  "required": ["policy_version", "logo", "colors", "imagery"],
+  "properties": {
+    "policy_version": { "type": "string", "minLength": 1 },
+    "brand_name": { "type": "string", "minLength": 1 },
+    "logo": {
+      "type": "object",
+      "required": ["required", "expected_filenames", "safe_corner", "max_relative_width"],
+      "properties": {
+        "required": { "type": "boolean" },
+        "expected_filenames": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "minItems": 1
+        },
+        "safe_corner": { "type": "string", "enum": ["top-right", "top-left"] },
+        "max_relative_width": { "type": "number", "minimum": 0.05, "maximum": 0.6 }
+      },
+      "additionalProperties": false
+    },
+    "colors": {
+      "type": "object",
+      "required": ["required_palette", "tolerance", "min_coverage"],
+      "properties": {
+        "required_palette": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^#?[0-9A-Fa-f]{6}$" }
+        },
+        "tolerance": { "type": "integer", "minimum": 0, "maximum": 255 },
+        "min_coverage": { "type": "number", "minimum": 0.0, "maximum": 1.0 }
+      },
+      "additionalProperties": false
+    },
+    "imagery": {
+      "type": "object",
+      "required": ["required_keywords", "avoid_keywords"],
+      "properties": {
+        "required_keywords": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "avoid_keywords": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
+    },
+    "typography": {
+      "type": "object",
+      "required": ["primary_typeface", "fallback_typefaces"],
+      "properties": {
+        "primary_typeface": { "type": "string", "minLength": 1 },
+        "fallback_typefaces": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "case": { "type": "string", "enum": ["normal", "all-upper", "all-lower"] },
+        "color": { "type": "string", "pattern": "^#?[0-9A-Fa-f]{6}$" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

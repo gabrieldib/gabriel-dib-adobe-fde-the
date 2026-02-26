@@ -1,0 +1,24 @@
+{
+  "campaign_id": "demo_campaign",
+  "message": "Primary campaign headline goes here",
+  "target_region": "US",
+  "target_audience": "Describe the audience segment",
+  "locals": ["es", "fr"],
+  "visual_style": {
+    "keywords": ["minimal", "premium", "studio lighting"],
+    "mood": "modern, confident",
+    "palette": ["#111111", "#FFFFFF", "#00A3FF"]
+  },
+  "negative_prompt": "blurry, distorted text, watermark",
+  "products": [
+    {
+      "id": "product_1",
+      "name": "Product Name One",
+      "prompt": "Optional: detailed hero image description for GenAI"
+    },
+    {
+      "id": "product_2",
+      "name": "Product Name Two"
+    }
+  ]
+}

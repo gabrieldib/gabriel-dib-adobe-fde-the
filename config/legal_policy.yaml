@@ -1,0 +1,21 @@
+version: 1
+default_action: warn
+
+checks:
+  blocked_keywords:
+    - guaranteed cure
+    - risk free forever
+    - porn
+    - murder
+  blocked_regex:
+    - "\\bfree\\s+money\\b"
+    - "\\bno\\s+side\\s+effects\\b"
+
+locale_overrides:
+  es:
+    blocked_keywords:
+      - cura garantizada
+      - pornografía
+      - asesinato
+    blocked_regex:
+      - "\\bsin\\s+efectos\\s+secundarios\\b"

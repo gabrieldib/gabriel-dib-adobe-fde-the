@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "LegalPolicy",
+  "type": "object",
+  "required": ["version", "default_action", "checks"],
+  "properties": {
+    "version": { "type": "integer", "minimum": 1 },
+    "default_action": { "type": "string", "enum": ["warn", "block"] },
+    "checks": {
+      "type": "object",
+      "required": ["blocked_keywords", "blocked_regex"],
+      "properties": {
+        "blocked_keywords": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "blocked_regex": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        }
+      },
+      "additionalProperties": false
+    },
+    "locale_overrides": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["blocked_keywords", "blocked_regex"],
+        "properties": {
+          "blocked_keywords": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "blocked_regex": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,36 @@
+policy_version: "1.0"
+brand_name: "Client Brand"
+
+logo:
+  required: true
+  expected_filenames:
+    - logo.png
+  safe_corner: top-right
+  max_relative_width: 0.22
+
+colors:
+  required_palette:
+    - "#111111"
+    - "#FFFFFF"
+    - "#ED2224" #adobe red
+  tolerance: 25
+  min_coverage: 0.01
+
+imagery:
+  required_keywords:
+    - premium
+  avoid_keywords:
+    - watermark
+    - blurry
+
+typography:
+  primary_typeface: "assets/fonts/AdobeClean-Regular.otf"
+  fallback_typefaces:
+    - "assets/fonts/AdobeClean-Bold.otf"
+    - "assets/fonts/AdobeClean-Light.otf"
+    - "assets/fonts/SourceSans3-Regular.ttf"
+    - "assets/fonts/SourceCodePro-Regular.ttf"
+    - "arial.ttf"
+    - "segoeui.ttf"
+  case: "all-upper" # normal, all-upper, all-lower
+  color: "#FFFFFF"

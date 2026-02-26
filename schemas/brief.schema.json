@@ -1,0 +1,191 @@
+{
+  "$defs": {
+    "ProductBrief": {
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "prompt": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Prompt"
+        },
+        "image": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Image"
+        },
+        "logo": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Logo"
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ],
+      "title": "ProductBrief",
+      "type": "object"
+    },
+    "VisualStyle": {
+      "properties": {
+        "keywords": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Keywords",
+          "type": "array"
+        },
+        "mood": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Mood"
+        },
+        "palette": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Palette",
+          "type": "array"
+        }
+      },
+      "title": "VisualStyle",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "campaign_id": {
+      "minLength": 1,
+      "title": "Campaign Id",
+      "type": "string"
+    },
+    "message": {
+      "minLength": 1,
+      "title": "Message",
+      "type": "string"
+    },
+    "target_region": {
+      "minLength": 1,
+      "title": "Target Region",
+      "type": "string"
+    },
+    "target_audience": {
+      "minLength": 1,
+      "title": "Target Audience",
+      "type": "string"
+    },
+    "locals": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Locals",
+      "type": "array"
+    },
+    "products": {
+      "items": {
+        "$ref": "#/$defs/ProductBrief"
+      },
+      "minItems": 2,
+      "title": "Products",
+      "type": "array"
+    },
+    "visual_style": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/VisualStyle"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "prompts": {
+      "anyOf": [
+        {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Prompts"
+    },
+    "palette": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Palette"
+    },
+    "negative_prompt": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Negative Prompt"
+    }
+  },
+  "required": [
+    "campaign_id",
+    "message",
+    "target_region",
+    "target_audience",
+    "products"
+  ],
+  "title": "CampaignBrief",
+  "type": "object"
+}
